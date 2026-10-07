@@ -1,0 +1,35 @@
+name: Build APK
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Zip kholo
+        run: unzip -q "$(ls *.zip | head -1)" -d src
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+      - name: APK banao
+        working-directory: src
+        run: gradle assembleDebug --no-daemon
+      - run: cp src/app/build/outputs/apk/debug/app-debug.apk DTC-PRO.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DTC-PRO-APK
+          path: DTC-PRO.apk
+      - name: Release (sirf v tag par)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: DTC-PRO.apk
